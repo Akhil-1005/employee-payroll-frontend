@@ -21,6 +21,8 @@ export interface DailyAttendanceRow {
 
 export interface DailyAttendanceSheet {
   date: string;
+  /** First date that can still be marked; earlier days are closed (view only). */
+  earliestOpenDate: string;
   /** Counts for the whole day, not just the current page. */
   totalEmployees: number;
   present: number;

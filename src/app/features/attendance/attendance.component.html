@@ -32,6 +32,13 @@
       }
     </div>
 
+    @if (dayClosed()) {
+      <div class="alert alert--info closed-note">
+        This month is closed for attendance. You can view it, but changes are only allowed from
+        {{ daily.response()?.earliestOpenDate }} onwards.
+      </div>
+    }
+
     <div class="bulk-bar">
       <span class="bulk-bar__label">
         Bulk:
@@ -39,9 +46,9 @@
         @else { all {{ daily.response()?.totalEmployees ?? 0 }} active employees }
       </span>
       <div class="bulk-bar__actions">
-        <button type="button" class="btn btn--sm btn--success-outline" [disabled]="bulkSaving() || daily.items().length === 0"
+        <button type="button" class="btn btn--sm btn--success-outline" [disabled]="bulkSaving() || dayClosed() || daily.items().length === 0"
                 (click)="markBulk('PRESENT')">Mark present</button>
-        <button type="button" class="btn btn--sm btn--danger-outline" [disabled]="bulkSaving() || daily.items().length === 0"
+        <button type="button" class="btn btn--sm btn--danger-outline" [disabled]="bulkSaving() || dayClosed() || daily.items().length === 0"
                 (click)="markBulk('ABSENT')">Mark absent</button>
       </div>
     </div>
@@ -84,9 +91,9 @@
                 <td class="actions-col">
                   <div class="segmented" role="group" [attr.aria-label]="'Attendance for ' + row.employeeName">
                     <button type="button" class="segmented__btn" [class.segmented__btn--present]="row.status === 'PRESENT'"
-                            [disabled]="savingIds().has(row.employeeId)" (click)="mark(row, 'PRESENT')">Present</button>
+                            [disabled]="dayClosed() || savingIds().has(row.employeeId)" (click)="mark(row, 'PRESENT')">Present</button>
                     <button type="button" class="segmented__btn" [class.segmented__btn--absent]="row.status === 'ABSENT'"
-                            [disabled]="savingIds().has(row.employeeId)" (click)="mark(row, 'ABSENT')">Absent</button>
+                            [disabled]="dayClosed() || savingIds().has(row.employeeId)" (click)="mark(row, 'ABSENT')">Absent</button>
                   </div>
                 </td>
               </tr>

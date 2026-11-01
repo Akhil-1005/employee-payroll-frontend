@@ -53,6 +53,12 @@ export class AttendanceComponent implements OnInit {
     return rows.length > 0 && rows.every((r) => this.selectedIds().has(r.employeeId));
   });
 
+  /** The selected day is in a closed month: it can be viewed but not marked. */
+  protected readonly dayClosed = computed(() => {
+    const earliestOpen = this.daily.response()?.earliestOpenDate;
+    return !!earliestOpen && this.date() < earliestOpen;
+  });
+
   // ---------- History ----------
 
   protected readonly employeeOptions = signal<EmployeeOption[]>([]);

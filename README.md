@@ -1,8 +1,10 @@
 # Payroll Frontend
 
 > **Mini Payroll & Attendance System**
-> - Live app: (added after deployment)
-> - Backend repository: https://github.com/Akhil-1005/employee-payroll-backend
+> - **Live app: https://employee-payroll-frontend-eight.ver     cel.app**
+> - Demo logins: Admin `admin@payroll.com` / `Admin@payroll` · Employee `ananya.rao@payroll.com` / `Employee@123`
+> - Backend repository: https://github.com/Akhil-1005/employee-payroll-backend · API: https://employee-payroll-backend-0h40.onrender.com/payroll
+> - Backend runs on Render's free tier: after 15 minutes idle, the first request takes about 50 seconds.
 
 Angular 18 single-page app for the Mini Payroll & Attendance System. It talks to the Spring Boot API in the [backend repository](https://github.com/Akhil-1005/employee-payroll-backend).
 
