@@ -1,0 +1,59 @@
+<form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+  <div class="form-grid">
+    <label class="field field--full">
+      <span class="field__label">Full name</span>
+      <input class="input" formControlName="name" autocomplete="off" />
+      @if (fieldError('name'); as error) { <span class="field__error">{{ error }}</span> }
+    </label>
+
+    <label class="field field--full">
+      <span class="field__label">Email</span>
+      <input class="input" type="email" formControlName="email" autocomplete="off" />
+      @if (fieldError('email'); as error) { <span class="field__error">{{ error }}</span> }
+    </label>
+
+    <label class="field">
+      <span class="field__label">Work mode</span>
+      <select class="input" formControlName="workMode">
+        @for (mode of workModes; track mode) {
+          <option [value]="mode">{{ mode | label }}</option>
+        }
+      </select>
+      @if (fieldError('workMode'); as error) { <span class="field__error">{{ error }}</span> }
+    </label>
+
+    <label class="field">
+      <span class="field__label">Salary type</span>
+      <select class="input" formControlName="salaryType">
+        @for (type of salaryTypes; track type) {
+          <option [value]="type">{{ type | label }}</option>
+        }
+      </select>
+      @if (fieldError('salaryType'); as error) { <span class="field__error">{{ error }}</span> }
+    </label>
+
+    <label class="field field--full">
+      <span class="field__label">
+        {{ form.controls.salaryType.value === 'DAILY' ? 'Daily wage' : 'Monthly salary' }}
+      </span>
+      <input class="input" type="number" min="0.01" step="0.01" formControlName="salaryAmount" />
+      @if (fieldError('salaryAmount'); as error) { <span class="field__error">{{ error }}</span> }
+    </label>
+
+    @if (!isEdit) {
+      <label class="field field--full">
+        <span class="field__label">Login password <span class="muted">(optional)</span></span>
+        <input class="input" type="password" formControlName="password" autocomplete="new-password" />
+        <span class="field__hint">Set a password to let this employee sign in with their email.</span>
+        @if (fieldError('password'); as error) { <span class="field__error">{{ error }}</span> }
+      </label>
+    }
+  </div>
+
+  <div class="form-actions">
+    <button type="button" class="btn btn--ghost" (click)="cancelled.emit()">Cancel</button>
+    <button type="submit" class="btn btn--primary" [disabled]="saving()">
+      {{ saving() ? 'Saving…' : isEdit ? 'Save changes' : 'Create employee' }}
+    </button>
+  </div>
+</form>

@@ -1,0 +1,91 @@
+<header class="page-header">
+  <div>
+    <h1>Employees</h1>
+    <p class="muted">{{ employees.page()?.totalElements ?? 0 }} {{ showInactive() ? 'total' : 'active' }} employees</p>
+  </div>
+  <button type="button" class="btn btn--primary" (click)="openCreate()">+ Add employee</button>
+</header>
+
+<div class="card">
+  <div class="toolbar">
+    <input class="input toolbar__search" type="search" placeholder="Search by name or email"
+           aria-label="Search employees" [ngModel]="search()" (ngModelChange)="onSearch($event)" />
+    <label class="checkbox">
+      <input type="checkbox" [ngModel]="showInactive()" (ngModelChange)="toggleInactive($event)" />
+      Show inactive
+    </label>
+  </div>
+
+  @if (!employees.page()) {
+    <div class="empty-state">Loading employees…</div>
+  } @else if (employees.items().length === 0) {
+    <div class="empty-state">
+      @if (search()) { No employees match "{{ search() }}". }
+      @else { No employees yet. Add your first employee to get started. }
+    </div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>Employee</th>
+            <th>Work mode</th>
+            <th>Salary type</th>
+            <th class="num">Salary</th>
+            <th>Status</th>
+            <th class="actions-col"><span class="sr-only">Actions</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (employee of employees.items(); track employee.id) {
+            <tr [class.row--muted]="!employee.active">
+              <td>
+                <div class="cell-title">{{ employee.name }}</div>
+                <div class="cell-sub">{{ employee.email }}</div>
+              </td>
+              <td><span class="badge badge--neutral">{{ employee.role | label }}</span></td>
+              <td>{{ employee.salaryType | label }}</td>
+              <td class="num">
+                {{ employee.salaryAmount | currency }}
+                <span class="cell-sub">/ {{ employee.salaryType === 'DAILY' ? 'day' : 'month' }}</span>
+              </td>
+              <td>
+                <span class="badge" [class.badge--success]="employee.active" [class.badge--neutral]="!employee.active">
+                  {{ employee.active ? 'Active' : 'Inactive' }}
+                </span>
+              </td>
+              <td class="actions-col">
+                @if (employee.active) {
+                  <button type="button" class="btn btn--ghost btn--sm" (click)="openEdit(employee)">Edit</button>
+                  <button type="button" class="btn btn--ghost btn--sm btn--danger-text"
+                          (click)="deactivating.set(employee)">Deactivate</button>
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginator [page]="employees.page()!" [disabled]="employees.loading()" (pageChange)="employees.goTo($event)" />
+  }
+</div>
+
+@if (formOpen()) {
+  <app-modal [title]="editing() ? 'Edit employee' : 'Add employee'" (closed)="closeForm()">
+    <app-employee-form [employee]="editing()" [saving]="saving()" [serverErrors]="serverErrors()"
+                       (submitted)="save($event)" (cancelled)="closeForm()" />
+  </app-modal>
+}
+
+@if (deactivating(); as employee) {
+  <app-modal title="Deactivate employee" (closed)="deactivating.set(null)">
+    <p>
+      Deactivate <strong>{{ employee.name }}</strong>? They will be removed from attendance and payroll runs and
+      their login will be disabled. Their history is kept.
+    </p>
+    <div class="form-actions">
+      <button type="button" class="btn btn--ghost" (click)="deactivating.set(null)">Cancel</button>
+      <button type="button" class="btn btn--danger" (click)="confirmDeactivate()">Deactivate</button>
+    </div>
+  </app-modal>
+}

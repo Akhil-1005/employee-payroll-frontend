@@ -1,0 +1,54 @@
+<div class="shell" [class.shell--menu-open]="menuOpen()">
+  <aside class="sidebar">
+    <div class="sidebar__brand">
+      <span class="brand-mark" aria-hidden="true">P</span>
+      <span>Payroll</span>
+      <button type="button" class="icon-btn sidebar__close" aria-label="Close menu" (click)="menuOpen.set(false)">
+        &#x2715;
+      </button>
+    </div>
+
+    <nav class="sidebar__nav" aria-label="Main">
+      @for (item of navItems(); track item.path) {
+        <a class="nav-link" [routerLink]="item.path" routerLinkActive="nav-link--active" (click)="menuOpen.set(false)">
+          @switch (item.icon) {
+            @case ('users') {
+              <svg class="nav-link__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M16 19v-1a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v1M9 10a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Zm13 9v-1a4 4 0 0 0-3-3.9M15.5 3.1a3.5 3.5 0 0 1 0 6.8" /></svg>
+            }
+            @case ('calendar') {
+              <svg class="nav-link__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M7 3v3M17 3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1Zm4 9 2 2 4-4" /></svg>
+            }
+            @case ('leave') {
+              <svg class="nav-link__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 21c4.5-2 7-5.5 7-10V5l-7-2-7 2v6c0 4.5 2.5 8 7 10Zm-3-10h6" /></svg>
+            }
+            @case ('wallet') {
+              <svg class="nav-link__icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h15a1 1 0 0 1 1 1v11a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7Zm0 0 12-3v3m0 7h.01" /></svg>
+            }
+          }
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    </nav>
+
+    <div class="sidebar__user">
+      <span class="avatar" aria-hidden="true">{{ initials() }}</span>
+      <div class="sidebar__user-text">
+        <strong>{{ auth.user()?.username }}</strong>
+        <span>{{ auth.user()?.role | label }}</span>
+      </div>
+      <button type="button" class="btn btn--ghost btn--sm" (click)="logout()">Log out</button>
+    </div>
+  </aside>
+
+  <div class="shell__backdrop" (click)="menuOpen.set(false)"></div>
+
+  <div class="shell__main">
+    <header class="topbar">
+      <button type="button" class="icon-btn" aria-label="Open menu" (click)="menuOpen.set(true)">&#9776;</button>
+      <span class="topbar__title">Payroll</span>
+    </header>
+    <main class="content">
+      <router-outlet />
+    </main>
+  </div>
+</div>

@@ -1,0 +1,158 @@
+<header class="page-header">
+  <div>
+    <h1>{{ isAdmin() ? 'Attendance' : 'My attendance' }}</h1>
+    <p class="muted">
+      {{ isAdmin() ? 'Mark daily attendance and review attendance history.' : 'Your attendance record.' }}
+    </p>
+  </div>
+</header>
+
+@if (isAdmin()) {
+  <div class="tabs" role="tablist">
+    <button type="button" role="tab" class="tab" [class.tab--active]="tab() === 'daily'"
+            [attr.aria-selected]="tab() === 'daily'" (click)="tab.set('daily')">Daily marking</button>
+    <button type="button" role="tab" class="tab" [class.tab--active]="tab() === 'history'"
+            [attr.aria-selected]="tab() === 'history'" (click)="openHistory()">Employee history</button>
+  </div>
+}
+
+@if (tab() === 'daily') {
+  <div class="card">
+    <div class="toolbar">
+      <label class="field field--inline">
+        <span class="field__label">Date</span>
+        <input class="input" type="date" [max]="maxDate" [ngModel]="date()" (ngModelChange)="changeDate($event)" />
+      </label>
+      @if (daily.response(); as s) {
+        <div class="stat-chips" aria-label="Counts for the whole day">
+          <span class="chip chip--success">{{ s.present }} present</span>
+          <span class="chip chip--danger">{{ s.absent }} absent</span>
+          <span class="chip">{{ s.unmarked }} unmarked</span>
+        </div>
+      }
+    </div>
+
+    <div class="bulk-bar">
+      <span class="bulk-bar__label">
+        Bulk:
+        @if (selectedIds().size > 0) { {{ selectedIds().size }} selected on this page }
+        @else { all {{ daily.response()?.totalEmployees ?? 0 }} active employees }
+      </span>
+      <div class="bulk-bar__actions">
+        <button type="button" class="btn btn--sm btn--success-outline" [disabled]="bulkSaving() || daily.items().length === 0"
+                (click)="markBulk('PRESENT')">Mark present</button>
+        <button type="button" class="btn btn--sm btn--danger-outline" [disabled]="bulkSaving() || daily.items().length === 0"
+                (click)="markBulk('ABSENT')">Mark absent</button>
+      </div>
+    </div>
+
+    @if (!daily.page()) {
+      <div class="empty-state">Loading…</div>
+    } @else if (daily.items().length === 0) {
+      <div class="empty-state">No active employees. Add employees first.</div>
+    } @else {
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr>
+              <th class="check-col">
+                <input type="checkbox" aria-label="Select all on this page" [checked]="allSelected()" (change)="toggleAll()" />
+              </th>
+              <th>Employee</th>
+              <th>Work mode</th>
+              <th>Status</th>
+              <th class="actions-col">Mark</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of daily.items(); track row.employeeId) {
+              <tr>
+                <td class="check-col">
+                  <input type="checkbox" [attr.aria-label]="'Select ' + row.employeeName"
+                         [checked]="selectedIds().has(row.employeeId)" (change)="toggleSelected(row.employeeId)" />
+                </td>
+                <td><div class="cell-title">{{ row.employeeName }}</div></td>
+                <td><span class="badge badge--neutral">{{ row.role | label }}</span></td>
+                <td>
+                  @if (row.status) {
+                    <span class="badge" [class.badge--success]="row.status === 'PRESENT'"
+                          [class.badge--danger]="row.status === 'ABSENT'">{{ row.status | label }}</span>
+                  } @else {
+                    <span class="badge badge--neutral">Not marked</span>
+                  }
+                </td>
+                <td class="actions-col">
+                  <div class="segmented" role="group" [attr.aria-label]="'Attendance for ' + row.employeeName">
+                    <button type="button" class="segmented__btn" [class.segmented__btn--present]="row.status === 'PRESENT'"
+                            [disabled]="savingIds().has(row.employeeId)" (click)="mark(row, 'PRESENT')">Present</button>
+                    <button type="button" class="segmented__btn" [class.segmented__btn--absent]="row.status === 'ABSENT'"
+                            [disabled]="savingIds().has(row.employeeId)" (click)="mark(row, 'ABSENT')">Absent</button>
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-paginator [page]="daily.page()!" [disabled]="daily.loading()" (pageChange)="daily.goTo($event)" />
+    }
+  </div>
+} @else {
+  <div class="card">
+    <div class="toolbar toolbar--wrap">
+      @if (isAdmin()) {
+        <label class="field field--inline">
+          <span class="field__label">Employee</span>
+          <select class="input" [ngModel]="historyEmployeeId()" (ngModelChange)="selectHistoryEmployee($event)">
+            <option value="" disabled>Select employee</option>
+            @for (employee of employeeOptions(); track employee.id) {
+              <option [value]="employee.id">{{ employee.name }}</option>
+            }
+          </select>
+        </label>
+      }
+      <label class="field field--inline">
+        <span class="field__label">From</span>
+        <input class="input" type="date" [max]="maxDate" [ngModel]="fromDate()" (ngModelChange)="fromDate.set($event)" />
+      </label>
+      <label class="field field--inline">
+        <span class="field__label">To</span>
+        <input class="input" type="date" [max]="maxDate" [ngModel]="toDate()" (ngModelChange)="toDate.set($event)" />
+      </label>
+      <button type="button" class="btn btn--secondary" (click)="applyHistoryFilters()">Apply</button>
+    </div>
+
+    @if (!historyEmployeeId()) {
+      <div class="empty-state">Select an employee to see their attendance.</div>
+    } @else if (!history.page()) {
+      <div class="empty-state">Loading…</div>
+    } @else if (history.page()!.totalElements === 0) {
+      <div class="empty-state">No attendance recorded in this period.</div>
+    } @else {
+      <div class="stat-chips stat-chips--padded" aria-label="Counts for the whole period">
+        <span class="chip chip--success">{{ history.response()!.present }} present</span>
+        <span class="chip chip--danger">{{ history.response()!.absent }} absent</span>
+      </div>
+      <div class="table-wrap">
+        <table class="table">
+          <thead>
+            <tr><th>Date</th><th>Day</th><th>Status</th></tr>
+          </thead>
+          <tbody>
+            @for (record of history.items(); track record.id) {
+              <tr>
+                <td>{{ record.date | date: 'mediumDate' }}</td>
+                <td class="muted">{{ record.date | date: 'EEEE' }}</td>
+                <td>
+                  <span class="badge" [class.badge--success]="record.status === 'PRESENT'"
+                        [class.badge--danger]="record.status === 'ABSENT'">{{ record.status | label }}</span>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+      <app-paginator [page]="history.page()!" [disabled]="history.loading()" (pageChange)="history.goTo($event)" />
+    }
+  </div>
+}

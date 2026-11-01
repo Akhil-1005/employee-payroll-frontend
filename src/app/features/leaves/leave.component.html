@@ -1,0 +1,153 @@
+<header class="page-header">
+  <div>
+    <h1>{{ isAdmin() ? 'Leave requests' : 'My leave' }}</h1>
+    <p class="muted">
+      @if (isAdmin()) { Review and approve employee leave requests. }
+      @else { Apply for leave and track the status of your requests. }
+    </p>
+  </div>
+  <button type="button" class="btn btn--primary" (click)="openApply()">+ Apply for leave</button>
+</header>
+
+<div class="card">
+  <div class="toolbar toolbar--wrap">
+    <div class="tabs tabs--pills" role="tablist" aria-label="Filter by status">
+      <button type="button" role="tab" class="tab" [class.tab--active]="statusFilter() === ''"
+              (click)="setStatusFilter('')">All</button>
+      @for (status of statuses; track status) {
+        <button type="button" role="tab" class="tab" [class.tab--active]="statusFilter() === status"
+                (click)="setStatusFilter(status)">{{ status | label }}</button>
+      }
+    </div>
+    @if (isAdmin()) {
+      <select class="input toolbar__select" aria-label="Filter by employee"
+              [ngModel]="employeeFilter()" (ngModelChange)="setEmployeeFilter($event)">
+        <option value="">All employees</option>
+        @for (employee of employees(); track employee.id) {
+          <option [value]="employee.id">{{ employee.name }}</option>
+        }
+      </select>
+    }
+  </div>
+
+  @if (!leaves.page()) {
+    <div class="empty-state">Loading leave requests…</div>
+  } @else if (leaves.items().length === 0) {
+    <div class="empty-state">No leave requests found.</div>
+  } @else {
+    <div class="table-wrap">
+      <table class="table">
+        <thead>
+          <tr>
+            @if (isAdmin()) { <th>Employee</th> }
+            <th>Dates</th>
+            <th class="num">Days</th>
+            <th>Reason</th>
+            <th>Status</th>
+            @if (isAdmin()) { <th class="actions-col"><span class="sr-only">Actions</span></th> }
+          </tr>
+        </thead>
+        <tbody>
+          @for (leave of leaves.items(); track leave.id) {
+            <tr>
+              @if (isAdmin()) { <td><div class="cell-title">{{ leave.employeeName }}</div></td> }
+              <td>
+                <div>{{ leave.startDate | date: 'mediumDate' }} – {{ leave.endDate | date: 'mediumDate' }}</div>
+                <div class="cell-sub">Applied {{ leave.appliedOn | date: 'medium' }}</div>
+              </td>
+              <td class="num">{{ leave.totalDays }}</td>
+              <td class="cell-reason">
+                <div>{{ leave.reason }}</div>
+                @if (leave.reviewerRemarks) {
+                  <div class="cell-sub">Remarks: {{ leave.reviewerRemarks }}</div>
+                }
+              </td>
+              <td>
+                <span class="badge" [class.badge--warning]="leave.status === 'PENDING'"
+                      [class.badge--success]="leave.status === 'APPROVED'"
+                      [class.badge--danger]="leave.status === 'REJECTED'">{{ leave.status | label }}</span>
+                @if (leave.reviewedBy) { <div class="cell-sub">by {{ leave.reviewedBy }}</div> }
+              </td>
+              @if (isAdmin()) {
+                <td class="actions-col">
+                  @if (leave.status === 'PENDING') {
+                    <button type="button" class="btn btn--secondary btn--sm" (click)="openReview(leave)">Review</button>
+                  }
+                </td>
+              }
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+    <app-paginator [page]="leaves.page()!" [disabled]="leaves.loading()" (pageChange)="leaves.goTo($event)" />
+  }
+</div>
+
+@if (applyOpen()) {
+  <app-modal title="Apply for leave" (closed)="applyOpen.set(false)">
+    <form [formGroup]="form" (ngSubmit)="apply()" novalidate>
+      <div class="form-grid">
+        @if (isAdmin()) {
+          <label class="field field--full">
+            <span class="field__label">Employee</span>
+            <select class="input" formControlName="employeeId">
+              <option value="" disabled>Select employee</option>
+              @for (employee of employees(); track employee.id) {
+                <option [value]="employee.id">{{ employee.name }}</option>
+              }
+            </select>
+            @if (showError('employeeId')) { <span class="field__error">Select an employee</span> }
+          </label>
+        }
+        <label class="field">
+          <span class="field__label">Start date</span>
+          <input class="input" type="date" formControlName="startDate" />
+          @if (showError('startDate')) { <span class="field__error">Start date is required</span> }
+          @if (serverErrors()['startDate']; as error) { <span class="field__error">{{ error }}</span> }
+        </label>
+        <label class="field">
+          <span class="field__label">End date</span>
+          <input class="input" type="date" [min]="form.controls.startDate.value" formControlName="endDate" />
+          @if (showError('endDate')) { <span class="field__error">End date is required</span> }
+          @if (form.errors?.['dateRange'] && form.controls.endDate.touched) {
+            <span class="field__error">End date must be on or after start date</span>
+          }
+        </label>
+        <label class="field field--full">
+          <span class="field__label">Reason</span>
+          <textarea class="input" rows="3" maxlength="500" formControlName="reason"></textarea>
+          @if (showError('reason')) { <span class="field__error">Reason is required (max 500 characters)</span> }
+          @if (serverErrors()['reason']; as error) { <span class="field__error">{{ error }}</span> }
+        </label>
+      </div>
+      <div class="form-actions">
+        <button type="button" class="btn btn--ghost" (click)="applyOpen.set(false)">Cancel</button>
+        <button type="submit" class="btn btn--primary" [disabled]="applying()">
+          {{ applying() ? 'Submitting…' : 'Submit request' }}
+        </button>
+      </div>
+    </form>
+  </app-modal>
+}
+
+@if (reviewing(); as leave) {
+  <app-modal title="Review leave request" (closed)="reviewing.set(null)">
+    <dl class="detail-list">
+      <div><dt>Employee</dt><dd>{{ leave.employeeName }}</dd></div>
+      <div>
+        <dt>Dates</dt>
+        <dd>{{ leave.startDate | date: 'mediumDate' }} – {{ leave.endDate | date: 'mediumDate' }} ({{ leave.totalDays }} day(s))</dd>
+      </div>
+      <div><dt>Reason</dt><dd>{{ leave.reason }}</dd></div>
+    </dl>
+    <label class="field">
+      <span class="field__label">Remarks <span class="muted">(optional)</span></span>
+      <textarea class="input" rows="2" maxlength="500" [ngModel]="remarks()" (ngModelChange)="remarks.set($event)"></textarea>
+    </label>
+    <div class="form-actions">
+      <button type="button" class="btn btn--danger" [disabled]="reviewSaving()" (click)="decide('REJECTED')">Reject</button>
+      <button type="button" class="btn btn--success" [disabled]="reviewSaving()" (click)="decide('APPROVED')">Approve</button>
+    </div>
+  </app-modal>
+}

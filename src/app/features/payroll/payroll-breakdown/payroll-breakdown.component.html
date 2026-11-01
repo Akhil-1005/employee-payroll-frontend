@@ -1,0 +1,41 @@
+@let b = breakdown();
+<div class="breakdown">
+  <div class="breakdown__hero">
+    <div>
+      <div class="breakdown__label">Gross pay · {{ b.month }}</div>
+      <div class="breakdown__amount">{{ b.grossPay | currency }}</div>
+      <div class="muted">{{ b.employeeName }} · {{ b.role | label }}</div>
+    </div>
+    <span class="badge badge--neutral">{{ b.salaryType | label }}</span>
+  </div>
+
+  <div class="breakdown__formula">
+    <span class="breakdown__label">Formula</span>
+    <code>{{ b.formula }}</code>
+  </div>
+
+  <div class="breakdown__grid">
+    <section>
+      <h3>Salary</h3>
+      <dl class="kv">
+        <div><dt>{{ b.salaryType === 'DAILY' ? 'Daily wage' : 'Monthly salary' }}</dt><dd>{{ b.salaryAmount | currency }}</dd></div>
+        @if (b.daysPerMonthDivisor) {
+          <div><dt>Divisor</dt><dd>{{ b.daysPerMonthDivisor }} days</dd></div>
+        }
+        <div><dt>Per-day rate</dt><dd>{{ b.perDayRate | currency }}</dd></div>
+        <div class="kv__total"><dt>Payable days</dt><dd>{{ b.payableDays }}</dd></div>
+      </dl>
+    </section>
+
+    <section>
+      <h3>Days ({{ b.daysInMonth }} in month)</h3>
+      <dl class="kv">
+        <div><dt><span class="dot dot--success"></span>Present</dt><dd>{{ b.presentDays }}</dd></div>
+        <div><dt><span class="dot dot--danger"></span>Absent</dt><dd>{{ b.absentDays }}</dd></div>
+        <div><dt><span class="dot dot--warning"></span>Approved leave</dt><dd>{{ b.approvedLeaveDays }}</dd></div>
+        <div><dt><span class="dot dot--info"></span>Paid leave</dt><dd>{{ b.paidLeaveDays }}</dd></div>
+        <div><dt><span class="dot"></span>Not marked</dt><dd>{{ b.unmarkedDays }}</dd></div>
+      </dl>
+    </section>
+  </div>
+</div>

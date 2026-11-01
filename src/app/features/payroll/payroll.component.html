@@ -1,0 +1,105 @@
+<header class="page-header">
+  <div>
+    <h1>{{ isAdmin() ? 'Payroll' : 'My payroll' }}</h1>
+    <p class="muted">
+      @if (run.response(); as r) {
+        Monthly: (salary ÷ {{ r.daysPerMonth }}) × payable days · Daily: wage × payable days
+      } @else {
+        Pay is calculated from payable days. Each breakdown shows its exact formula.
+      }
+    </p>
+  </div>
+  <label class="field field--inline">
+    <span class="field__label">Month</span>
+    <input class="input" type="month" [max]="maxMonth" [ngModel]="month()" (ngModelChange)="changeMonth($event)" />
+  </label>
+</header>
+
+@if (isAdmin()) {
+  @if (run.response(); as r) {
+    <!-- Totals cover every active employee, not just the rows on this page -->
+    <div class="summary-cards">
+      <div class="summary-card">
+        <span class="summary-card__label">Total gross pay</span>
+        <strong class="summary-card__value">{{ r.totalGrossPay | currency }}</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-card__label">Employees</span>
+        <strong class="summary-card__value">{{ r.employeeCount }}</strong>
+      </div>
+      <div class="summary-card">
+        <span class="summary-card__label">Payable days</span>
+        <strong class="summary-card__value">{{ r.totalPayableDays }}</strong>
+      </div>
+    </div>
+
+    <div class="card">
+      @if (r.page.content.length === 0) {
+        <div class="empty-state">No active employees for this month.</div>
+      } @else {
+        <div class="table-wrap">
+          <table class="table table--clickable">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Salary</th>
+                <th class="num">Present</th>
+                <th class="num">Absent</th>
+                <th class="num">Leave</th>
+                <th class="num">Payable</th>
+                <th class="num">Gross pay</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (row of r.page.content; track row.employeeId) {
+                <tr tabindex="0" (click)="selected.set(row)" (keydown.enter)="selected.set(row)">
+                  <td>
+                    <div class="cell-title">
+                      {{ row.employeeName }}
+                      @if (!row.active) { <span class="badge badge--neutral">Inactive</span> }
+                    </div>
+                    <div class="cell-sub">{{ row.role | label }}</div>
+                  </td>
+                  <td>
+                    {{ row.salaryAmount | currency }}
+                    <span class="cell-sub">/ {{ row.salaryType === 'DAILY' ? 'day' : 'month' }}</span>
+                  </td>
+                  <td class="num">{{ row.presentDays }}</td>
+                  <td class="num">{{ row.absentDays }}</td>
+                  <td class="num">{{ row.approvedLeaveDays }}</td>
+                  <td class="num">{{ row.payableDays }}</td>
+                  <td class="num"><strong>{{ row.grossPay | currency }}</strong></td>
+                </tr>
+              }
+            </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="5">Total ({{ r.employeeCount }} employees)</td>
+                <td class="num">{{ r.totalPayableDays }}</td>
+                <td class="num"><strong>{{ r.totalGrossPay | currency }}</strong></td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        <app-paginator [page]="r.page" [disabled]="run.loading()" (pageChange)="run.goTo($event)" />
+        <p class="table-hint">Select a row to see the full breakdown.</p>
+      }
+    </div>
+  } @else {
+    <div class="card"><div class="empty-state">Calculating payroll…</div></div>
+  }
+} @else {
+  @if (own(); as breakdown) {
+    <div class="card card--padded">
+      <app-payroll-breakdown [breakdown]="breakdown" />
+    </div>
+  } @else if (loadingOwn()) {
+    <div class="card"><div class="empty-state">Calculating payroll…</div></div>
+  }
+}
+
+@if (selected(); as breakdown) {
+  <app-modal title="Salary breakdown" [wide]="true" (closed)="selected.set(null)">
+    <app-payroll-breakdown [breakdown]="breakdown" />
+  </app-modal>
+}
